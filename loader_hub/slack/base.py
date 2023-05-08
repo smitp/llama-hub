@@ -33,6 +33,7 @@ class SlackReader(BaseReader):
         slack_token: Optional[str] = None,
         earliest_date: Optional[datetime] = None,
         latest_date: Optional[datetime] = None,
+        message_separator: str = "\n\n",
     ) -> None:
         """Initialize with parameters."""
         from slack_sdk import WebClient
@@ -60,6 +61,8 @@ class SlackReader(BaseReader):
         res = self.client.api_test()
         if not res["ok"]:
             raise ValueError(f"Error initializing Slack API: {res['error']}")
+        
+        self.message_separator = message_separator
 
     def _read_message(self, channel_id: str, message_ts: str) -> str:
         from slack_sdk.errors import SlackApiError
@@ -101,7 +104,7 @@ class SlackReader(BaseReader):
                 else:
                     logger.error("Error parsing conversation replies: {}".format(e))
 
-        return "\n\n".join(messages_text)
+        return self.message_separator.join(messages_text)
 
     def _read_channel(self, channel_id: str, reverse_chronological: bool) -> str:
         from slack_sdk.errors import SlackApiError
@@ -153,9 +156,9 @@ class SlackReader(BaseReader):
                     logger.error("Error parsing conversation replies: {}".format(e))
 
         return (
-            "\n\n".join(result_messages)
+            self.message_separator.join(result_messages)
             if reverse_chronological
-            else "\n\n".join(result_messages[::-1])
+            else self.message_separator.join(result_messages[::-1])
         )
 
     def load_data(
